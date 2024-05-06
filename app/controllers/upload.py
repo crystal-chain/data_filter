@@ -1,11 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, send_file
 from ..model.logic import *
 import pandas as pd 
+from io import BytesIO
 import os
+import zipfile
 
 upload_blueprint = Blueprint('upload', __name__)
-UPLOAD_FOLDER = 'filtred_files'
-upload_blueprint.config = {'UPLOAD_FOLDER': UPLOAD_FOLDER}
 
 @upload_blueprint.route('/', methods=['GET'])
 def select_page():
@@ -43,16 +43,6 @@ def upload_file_medor():
                 df_perfect_duplicate = df[df['Error Type'].str.startswith('Perfect Duplicate with')]
                 df_missing_relationship = df[df['Error Type'].str.startswith('Missing relationship')]
 
-                # Construction des noms de fichier pour chaque type d'erreur
-                logic_duplicate_filename = f"Logic_duplicate_{file.filename}"
-                perfect_duplicate_filename = f"Perfect_duplicate_{file.filename}"
-                missing_relationship_filename = f"Missing_relationship_{file.filename}"
-
-                # Chemins d'accès aux fichiers CSV pour chaque type d'erreur
-                logic_duplicate_filepath = os.path.join(upload_blueprint.config['UPLOAD_FOLDER'], logic_duplicate_filename)
-                perfect_duplicate_filepath = os.path.join(upload_blueprint.config['UPLOAD_FOLDER'], perfect_duplicate_filename)
-                missing_relationship_filepath = os.path.join(upload_blueprint.config['UPLOAD_FOLDER'], missing_relationship_filename)
-
                 # Ajouter les colonnes et supprimer les colonnes inutiles
                 df_logic_duplicate = add_columns_and_remove(df_logic_duplicate)
                 df_perfect_duplicate = add_columns_and_remove(df_perfect_duplicate)
@@ -65,15 +55,26 @@ def upload_file_medor():
                 # Traduction du message de log par quelque chose de plus intelligible par le client 
                 df_missing_relationship=modify_error_type(df_missing_relationship)
 
-                # Enregistrement des fichiers CSV
-                df_logic_duplicate.to_csv(logic_duplicate_filepath, index=False, encoding="utf-8", sep=";")
-                df_perfect_duplicate.to_csv(perfect_duplicate_filepath, index=False, encoding="utf-8", sep=";")
-                df_missing_relationship.to_csv(missing_relationship_filepath, index=False, encoding="utf-8", sep=";")
+                excel_buffer= BytesIO()
+                save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,excel_buffer)
 
-                # Mettre tous dans un ficher excel ou chaque type d'erreur dans un onglet spécifique.
-                final_output=os.path.join(upload_blueprint.config['UPLOAD_FOLDER'],'errors_report.xlsx')
-
-                save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,final_output)
+                zip_buffer=BytesIO()
+                
+                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED, False) as zip_file:
+                    # Ajouter les fichiers CSV et excel dans le fichier ZIP en utilisant les noms de fichiers construits
+                    zip_file.writestr(f"Logic_duplicate_{file.filename}.csv", df_logic_duplicate.to_csv(index=False, encoding="utf-8", sep=";"))
+                    zip_file.writestr(f"Perfect_duplicate_{file.filename}.csv", df_perfect_duplicate.to_csv(index=False, encoding="utf-8", sep=";"))
+                    zip_file.writestr(f"Missing_relationship_{file.filename}.csv", df_missing_relationship.to_csv(index=False, encoding="utf-8", sep=";"))
+                    zip_file.writestr('errors_report.xlsx', excel_buffer.getvalue())
+                zip_buffer.seek(0)
+                # Retourner le fichier ZIP en tant que réponse à la requête POST
+                return send_file(
+                    zip_buffer,
+                    as_attachment=True,
+                    mimetype='application/zip',
+                    download_name=f'filtred_{file.filename}.zip'
+                    )
+            
             except Exception as e:
               return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')
         else:
@@ -105,15 +106,6 @@ def upload_file_carl():
                 df_perfect_duplicate = df[df['Error Type'].str.startswith('Perfect Duplicate with')]
                 df_missing_relationship = df[df['Error Type'].str.startswith('Missing relationship')]
 
-                # Construction des noms de fichier pour chaque type d'erreur
-                logic_duplicate_filename = f"Logic_duplicate_{file.filename}"
-                perfect_duplicate_filename = f"Perfect_duplicate_{file.filename}"
-                missing_relationship_filename = f"Missing_relationship_{file.filename}"
-
-                # Chemins d'accès aux fichiers CSV pour chaque type d'erreur
-                logic_duplicate_filepath = os.path.join(upload_blueprint.config['UPLOAD_FOLDER'], logic_duplicate_filename)
-                perfect_duplicate_filepath = os.path.join(upload_blueprint.config['UPLOAD_FOLDER'], perfect_duplicate_filename)
-                missing_relationship_filepath = os.path.join(upload_blueprint.config['UPLOAD_FOLDER'], missing_relationship_filename)
 
                 # Classifier les types d'erreur dans une colonne spécifiée 
                 df_missing_relationship = sort_missing_relationships(df_missing_relationship)   
@@ -122,16 +114,29 @@ def upload_file_carl():
 
                 #df_missing_relationship=modify_error_type(df_missing_relationship)
 
-                # Enregistrement des fichiers CSV
-                df_logic_duplicate.to_csv(logic_duplicate_filepath, index=False, encoding="utf-8", sep=";")
-                df_perfect_duplicate.to_csv(perfect_duplicate_filepath, index=False, encoding="utf-8", sep=";")
-                df_missing_relationship.to_csv(missing_relationship_filepath, index=False, encoding="utf-8", sep=";")
+                excel_buffer= BytesIO()
+                save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,excel_buffer)
 
-                # Mettre tous dans un ficher excel ou chaque type d'erreur dans un onglet spécifique.
+                zip_buffer=BytesIO()
+                
+                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED, False) as zip_file:
+                    # Ajouter les fichiers CSV dans le fichier ZIP en utilisant les noms de fichiers construits
+                    zip_file.writestr(f"Logic_duplicate_{file.filename}.csv", df_logic_duplicate.to_csv(index=False, encoding="utf-8", sep=";"))
+                    zip_file.writestr(f"Perfect_duplicate_{file.filename}.csv", df_perfect_duplicate.to_csv(index=False, encoding="utf-8", sep=";"))
+                    zip_file.writestr(f"Missing_relationship_{file.filename}.csv", df_missing_relationship.to_csv(index=False, encoding="utf-8", sep=";"))
+                    zip_file.writestr('errors_report.xlsx', excel_buffer.getvalue())
 
-                final_output=os.path.join(upload_blueprint.config['UPLOAD_FOLDER'],'errors_report.xls')
+                    # Retourner le fichier ZIP en tant que réponse à la requête ou faire autre chose avec zip_buffer
+                zip_buffer.seek(0)
 
-                save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,final_output)
+                # Retourner le fichier Excel en tant que réponse à la requête POST
+                return send_file(
+                    zip_buffer,
+                    as_attachment=True,
+                    mimetype='application/zip',
+                    download_name=f'filtred_{file.filename}.zip'
+                    )
+
 
             except Exception as e:
               return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')

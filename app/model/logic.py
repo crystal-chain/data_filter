@@ -2,6 +2,8 @@ import re
 import pandas as pd 
 import numpy as np
 import os
+from io import BytesIO
+
 
 ALLOWED_EXTENSIONS = {'csv'}
 
@@ -210,11 +212,11 @@ def ajouter_data_quality_type(df):
     return df
 
 
-def save_dfs_to_excel(df1,df2,df3, filename):
+def save_dfs_to_excel(df1,df2,df3, zip_buffer):
     """
     Sauvegarde des DataFrames dans un fichier Excel, chacun dans un onglet distinct.
     """
-    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(zip_buffer, engine='xlsxwriter') as writer:
         # Écrire le DataFrame 1 et figer la première ligne
         df1.to_excel(writer, sheet_name='Logical_Duplicate sheet', index=False)
         worksheet1 = writer.sheets['Logical_Duplicate sheet']
