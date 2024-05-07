@@ -16,7 +16,6 @@ def upload_file_medor():
     if request.method == 'POST':
         if 'file' not in request.files :
             return render_template('upload.html', error_message='Aucun fichier téléchargé.')
-
         file = request.files['file']
         if file.filename == '':
             return render_template('upload.html', error_message='Aucun fichier sélectionné.')
@@ -59,7 +58,6 @@ def upload_file_medor():
                 save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,excel_buffer)
 
                 zip_buffer=BytesIO()
-                
                 with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED, False) as zip_file:
                     # Ajouter les fichiers CSV et excel dans le fichier ZIP en utilisant les noms de fichiers construits
                     zip_file.writestr(f"Logic_duplicate_{file.filename}.csv", df_logic_duplicate.to_csv(index=False, encoding="utf-8", sep=";"))
@@ -74,7 +72,6 @@ def upload_file_medor():
                     mimetype='application/zip',
                     download_name=f'filtred_{file.filename}.zip'
                     )
-            
             except Exception as e:
               return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')
         else:
@@ -125,18 +122,14 @@ def upload_file_carl():
                     zip_file.writestr(f"Perfect_duplicate_{file.filename}.csv", df_perfect_duplicate.to_csv(index=False, encoding="utf-8", sep=";"))
                     zip_file.writestr(f"Missing_relationship_{file.filename}.csv", df_missing_relationship.to_csv(index=False, encoding="utf-8", sep=";"))
                     zip_file.writestr('errors_report.xlsx', excel_buffer.getvalue())
-
-                    # Retourner le fichier ZIP en tant que réponse à la requête ou faire autre chose avec zip_buffer
                 zip_buffer.seek(0)
-
-                # Retourner le fichier Excel en tant que réponse à la requête POST
+                # Retourner le fichier ZIP en tant que réponse à la requête POST
                 return send_file(
                     zip_buffer,
                     as_attachment=True,
                     mimetype='application/zip',
                     download_name=f'filtred_{file.filename}.zip'
                     )
-
 
             except Exception as e:
               return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')

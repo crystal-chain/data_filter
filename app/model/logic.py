@@ -27,7 +27,6 @@ def remove_duplicates(df):
 
 
 def keep_first_occurrence_for_missing_relationship(df,col_name):
-
     """
     Conserve uniquement la première occurrence du traceId et des champs de compositions
     """
@@ -212,11 +211,11 @@ def ajouter_data_quality_type(df):
     return df
 
 
-def save_dfs_to_excel(df1,df2,df3, zip_buffer):
+def save_dfs_to_excel(df1,df2,df3, excel_buffer):
     """
     Sauvegarde des DataFrames dans un fichier Excel, chacun dans un onglet distinct.
     """
-    with pd.ExcelWriter(zip_buffer, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
         # Écrire le DataFrame 1 et figer la première ligne
         df1.to_excel(writer, sheet_name='Logical_Duplicate sheet', index=False)
         worksheet1 = writer.sheets['Logical_Duplicate sheet']
