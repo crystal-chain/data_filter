@@ -115,7 +115,7 @@ def modify_error_type(df):
     def modify_message(row):
         for col in arrow_columns:
             if isinstance(row[col], str) and row[col].strip():  # Vérifier si la cellule a une valeur non vide
-                parts = row[col].split(', ')
+                parts = row[col].split(',')
                 modified_parts = []
                 for part in parts:
                     word = extract_word(col)
@@ -161,7 +161,7 @@ def sort_missing_relationships(df):
                 error_columns[error_type] = [''] * len(df)
             # Ajouter le contenu spécifique à cette occurrence d'erreur
             if error_columns[error_type][index]:
-                error_columns[error_type][index] += ',\n' + f"{error_type} ({content}) "
+                error_columns[error_type][index] += ',\n' + f"{error_type} ({content})"
             else:
                 error_columns[error_type][index] = f"{error_type} ({content})"
 
@@ -230,3 +230,86 @@ def save_dfs_to_excel(df1,df2,df3, excel_buffer):
         df3.to_excel(writer, sheet_name='Missing_relationship sheet', index=False)
         worksheet3 = writer.sheets['Missing_relationship sheet']
         worksheet3.freeze_panes(1, 0)  # Figer la première ligne de l'onglet 'Missing_relationship sheet'
+
+def count_errors_by_type_and_manufacturer(df):
+    """
+    Transforme un DataFrame pour compter les occurrences de types d'erreurs par manufacture et par date,
+    et ajoute un résumé des totaux par manufacture et par type d'erreur sans considération des dates.
+    """
+    new_df = df.copy()
+    new_df['TraceType'] = df['ParentType']
+    new_df['Date'] = pd.to_datetime(df['createdAt']).dt.date
+
+    # Détermination du type d'erreur
+    new_df['Error Type'] = df['Error Type'].apply(lambda x: 'Missing Relationship' if 'Missing' in x else 'Duplicate')
+
+    # Groupement initial par TraceType, Manufacturer, Date et Error Type
+    detailed_summary_df = new_df.groupby(['TraceType', 'Manufacturer', 'Date', 'Error Type']).size().reset_index(name='Count')
+
+    # Groupement supplémentaire par TraceType, Manufacturer et Error Type pour le total
+    overall_summary_df = new_df.groupby(['TraceType', 'Manufacturer', 'Error Type']).size().reset_index(name='Total Count')
+
+    # Combinaison des DataFrames détaillés et des totaux dans un seul DataFrame pour le retour
+    result_df = pd.concat([detailed_summary_df, overall_summary_df], ignore_index=True)
+
+    return result_df
+
+def modify_error_type_carl(df):
+    """
+    Modifie les messages d'erreur pour les rendre plus explicites pour les missing relationship 
+    """
+    # Faire une copie du DataFrame pour éviter les avertissements "SettingWithCopyWarning"
+    df = df.copy()
+    def extract_word(text):
+        match = re.search(r'\b([A-Z]+(?:-[A-Z]+)*)\b', text)
+        if match:
+            return match.group(1)
+        else:
+            return ''
+        
+    # Fonction pour extraire la valeur du lot, qui suit immédiatement le nom du lot et se termine avant un espace ou une parenthèse
+    def extract_lot_value(value):
+        match = re.search(r'(\(.*?\))', value)
+        if match:
+            # Enlever "C.Predecesseur" de la chaîne extraite
+            cleaned_value = match.group(1)
+            cleaned_value = cleaned_value.replace("C.Predecesseur", "")   # Supprime "C.Predecesseur"
+            cleaned_value = cleaned_value.replace("BonLivraison", "NumeroBL")  # Remplace "BonLivraison" par "NumeroBL"
+            cleaned_value = cleaned_value.replace("Origine", "Destination")  # Remplace "Origine" par "Destination"
+            cleaned_value = cleaned_value.replace("Source", "Production")  # Remplace "Source" par "Production"
+
+            return cleaned_value
+        else:
+            return None
+
+
+    # Identifier toutes les colonnes qui contiennent '->'
+    arrow_columns = [col for col in df.columns if '->' in col]
+   
+    # Fonction pour modifier le message d'erreur
+    def modify_message(row):
+        for col in arrow_columns:
+            if isinstance(row[col], str) and row[col].strip():  # Vérifier si la cellule a une valeur non vide
+                parts = re.split(r'\),\s*',row[col])
+                parts = [part + ')' if not part.endswith(')') and part else part for part in parts]
+
+                modified_parts = []
+                for part in parts:
+                    print(part,'*************')
+                    word = extract_word(col)
+                    lot_value = extract_lot_value(part)
+                    if 'trace->' in col:
+                        new_message = f"Absence {word} amont dont {lot_value}"
+                    else:
+                        new_message = f"Absence {word} aval dont {lot_value}"
+                    modified_parts.append(new_message)
+                # Recombiner les parties modifiées en une seule chaîne, séparées par des virgules
+                row[col] = ',\n'.join(modified_parts)
+        return row
+
+    df = df.apply(modify_message, axis=1)
+    
+    # Supprimer la colonne d'erreur d'origine
+    df.drop(columns=['Error Type'], inplace=True)
+
+    return df

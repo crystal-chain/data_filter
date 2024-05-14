@@ -27,6 +27,8 @@ def upload_file_medor():
                 df = rename_medor(df)
                 # Modifier le champ _ErrorMessage en Error Type
                 df = changer_errormessage(df)
+                # Cree le CSV de KPI
+                df_kpi=count_errors_by_type_and_manufacturer(df)
 
                 # Supprimer les lignes vides et colonnes vides 
                 df = nettoyer_ligne_colonne(df)
@@ -53,9 +55,10 @@ def upload_file_medor():
                 df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship,"ParentId")
                 # Traduction du message de log par quelque chose de plus intelligible par le client 
                 df_missing_relationship=modify_error_type(df_missing_relationship)
-
+            
                 excel_buffer= BytesIO()
                 save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,excel_buffer)
+
 
                 zip_buffer=BytesIO()
                 with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED, False) as zip_file:
@@ -64,6 +67,8 @@ def upload_file_medor():
                     zip_file.writestr(f"Perfect_duplicate_{file.filename}.csv", df_perfect_duplicate.to_csv(index=False, encoding="utf-8", sep=";"))
                     zip_file.writestr(f"Missing_relationship_{file.filename}.csv", df_missing_relationship.to_csv(index=False, encoding="utf-8", sep=";"))
                     zip_file.writestr('errors_report.xlsx', excel_buffer.getvalue())
+                    zip_file.writestr(f"KPI_{file.filename}.csv", df_kpi.to_csv(index=False, encoding="utf-8", sep=";"))
+
                 zip_buffer.seek(0)
                 # Retourner le fichier ZIP en tant que réponse à la requête POST
                 return send_file(
@@ -104,12 +109,12 @@ def upload_file_carl():
                 df_missing_relationship = df[df['Error Type'].str.startswith('Missing relationship')]
 
 
-                # Classifier les types d'erreur dans une colonne spécifiée 
+                #  Classifier les types d'erreur dans une colonne spécifiée 
                 df_missing_relationship = sort_missing_relationships(df_missing_relationship)   
                 # Garder la première occurrence pour les Missing relationship
                 df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship,"traceId")
-
-                #df_missing_relationship=modify_error_type(df_missing_relationship)
+                # Traduction du message de log par quelque chose de plus intelligible par le client 
+                df_missing_relationship=modify_error_type_carl(df_missing_relationship)
 
                 excel_buffer= BytesIO()
                 save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,excel_buffer)
