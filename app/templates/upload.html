@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload</title>
+</head>
+<body>
+    <h2>Téléchargement de fichier</h2>
+    <form  method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Télécharger">
+    </form>
+
+    <!-- Affichage du message d'erreur -->
+    {% if error_message %}
+    <p style="color: red;">{{ error_message }}</p>
+    {% endif %}
+</body>
+</html>
