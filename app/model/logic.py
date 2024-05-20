@@ -270,14 +270,45 @@ def modify_error_type_carl(df):
     # Fonction pour extraire la valeur du lot, qui suit immédiatement le nom du lot et se termine avant un espace ou une parenthèse
     def extract_lot_value(value):
         match = re.search(r'(\(.*?\))', value)
-        if match:
-            # Enlever "C.Predecesseur" de la chaîne extraite
+        unique_tracetype = df['TraceType'].unique()[0]
+        if match: 
             cleaned_value = match.group(1)
-            cleaned_value = cleaned_value.replace("C.Predecesseur", "")   # Supprime "C.Predecesseur"
-            cleaned_value = cleaned_value.replace("BonLivraison", "NumeroBL")  # Remplace "BonLivraison" par "NumeroBL"
-            cleaned_value = cleaned_value.replace("Origine", "Destination")  # Remplace "Origine" par "Destination"
-            cleaned_value = cleaned_value.replace("Source", "Production")  # Remplace "Source" par "Production"
-
+            if unique_tracetype=="BRASSERIE-COND":
+                cleaned_value = cleaned_value.replace("NumeroLotProductionSource", "NumeroLotProduction")   
+            elif unique_tracetype=="BRASSERIE-OF":
+                if "trace->BRASSERIE-REC " in value : 
+                    cleaned_value = cleaned_value.replace("C.NumeroLotSource", "NumeroLotReception ")  
+                if "trace -> BRASSERIE-OF" in value : 
+                    cleaned_value=cleaned_value.replace("C.NumeroLotSource","NumeroLotProduction")
+                if "BRASSERIE-COND->trace" in value : 
+                    cleaned_value=cleaned_value.replace("NumeroLotProduction","NumeroLotProductionSource ")
+                if "BRASSERIE-OF->trace" in value : 
+                    cleaned_value=cleaned_value.replace("NumeroLotProduction","C.NumeroLotSource")
+            elif unique_tracetype =="BRASSERIE-REC":
+                if "trace->MALTERIE-EXP" in value : 
+                    cleaned_value=cleaned_value.replace("BonLivraison","NumeroBL")
+                if "BRASSERIE-OF->trace" in value : 
+                    cleaned_value=cleaned_value.replace("NumeroLotReception","NumeroLotSource")
+            elif unique_tracetype=="MALTERIE-EXP" :
+                if "trace->MALTERIE-OF" in value:
+                    cleaned_value=cleaned_value.replace("C.Predecesseur","")
+                    cleaned_value=cleaned_value.replace("C.PredecesseurCelluleOrigine","CelluleDestination")
+                if "BRASSERIE-REC->trace" in value :
+                    cleaned_value=cleaned_value.replace("NumeroBL","BonLivraison")
+            elif unique_tracetype=="MALTERIE-OF":
+                if "trace->" in value :
+                    cleaned_value=cleaned_value.replace("C.Predecesseur","")
+                    cleaned_value=cleaned_value.replace("C.PredecesseurCelluleOrigine","CelluleDestination")
+                if "->trace" in value : 
+                    cleaned_value=cleaned_value.replace("TypeFlux","C.PredecesseurTypeFlux")
+                    cleaned_value=cleaned_value.replace("NumeroFlux","C.PredecesseurNumeroFlux")
+                    cleaned_value=cleaned_value.replace("CelluleDestination","C.PredecesseurCelluleOrigine")
+            elif unique_tracetype=="MALTERIE-REC":
+                if "MALTERIE-OF->trace" in value : 
+                    cleaned_value=cleaned_value.replace("TypeFlux","C.PredecesseurTypeFlux")
+                    cleaned_value=cleaned_value.replace("NumeroFlux","C.PredecesseurNumeroFlux")
+                    cleaned_value=cleaned_value.replace("CelluleDestination","C.PredecesseurCelluleOrigine")
+                  
             return cleaned_value
         else:
             return None
@@ -295,7 +326,6 @@ def modify_error_type_carl(df):
 
                 modified_parts = []
                 for part in parts:
-                    print(part,'*************')
                     word = extract_word(col)
                     lot_value = extract_lot_value(part)
                     if 'trace->' in col:
