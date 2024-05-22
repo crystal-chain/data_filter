@@ -5,6 +5,7 @@ import os
 from io import BytesIO
 
 
+
 ALLOWED_EXTENSIONS = {'csv'}
 
 def allowed_file(filename):
@@ -30,8 +31,8 @@ def keep_first_occurrence_for_missing_relationship(df,col_name):
     """
     Conserve uniquement la première occurrence du traceId et des champs de compositions
     """
-    # Filtrer les lignes où 'Error Type' commence par "Missing relationship"
-    df_missing_relationship = df[df['Error Type'].str.startswith('Missing relationship')]
+    # Filtrer les lignes où 'ErrorType' commence par "Missing relationship"
+    df_missing_relationship = df[df['ErrorType'].str.startswith('Missing relationship')]
 
     # Garder uniquement les colonnes qui commencent par 'C.'
     columns_to_keep = df.columns[df.columns.str.startswith('C.')].tolist()
@@ -45,8 +46,8 @@ def keep_first_occurrence_for_missing_relationship(df,col_name):
     columns_with_arrow = df.columns[df.columns.str.contains('->', regex=False)].tolist()
     columns_to_keep.extend(columns_with_arrow)
 
-    # Créer un masque pour garder seulement les colonnes qui sont dans 'columns_to_keep' ou qui sont 'Error Type'
-    mask = df.columns.isin(columns_to_keep) | (df.columns == 'Error Type')
+    # Créer un masque pour garder seulement les colonnes qui sont dans 'columns_to_keep' ou qui sont 'ErrorType'
+    mask = df.columns.isin(columns_to_keep) | (df.columns == 'ErrorType')
 
     # Garder la première occurrence de chaque TraceId
     first_occurrence_idx = df_missing_relationship[col_name].drop_duplicates(keep='first').index
@@ -74,7 +75,10 @@ def add_columns_and_remove(df):
 
 
     # Supprimer les colonnes hours_since_error, businessName et createdAt
-    df.drop(['hours_since_error', 'businessName', 'createdAt','_ErrorCode'], axis=1, inplace=True)
+
+    df.drop(['hours_since_error', 'businessName', 'createdAt','_ErrorCode','formatted_supplier',
+            'C.preceding_event_number_rnm01_first_part','C.preceding_event_number_rnm01_second_part',
+            'C.formatted_preceding_article_supplier'], axis=1, inplace=True, errors='ignore')
 
     return df
 
@@ -131,7 +135,7 @@ def modify_error_type(df):
     df = df.apply(modify_message, axis=1)
     
     # Supprimer la colonne d'erreur d'origine
-    df.drop(columns=['Error Type'], inplace=True)
+    df.drop(columns=['ErrorType'], inplace=True)
 
     return df
 
@@ -154,7 +158,7 @@ def sort_missing_relationships(df):
     # Parcourir chaque ligne du DataFrame
     for index, row in df.iterrows():
         # Extraire les types d'erreur de l'erreur actuelle
-        current_error_types = extract_error_types(row['Error Type'])
+        current_error_types = extract_error_types(row['ErrorType'])
         for error_type, content in current_error_types:
             # Créer la colonne si elle n'existe pas déjà
             if error_type not in error_columns:
@@ -171,14 +175,14 @@ def sort_missing_relationships(df):
 
     return df
 
- # Modification du champ _ErrorMessage en Error Type
+ # Modification du champ _ErrorMessage en ErrorType
 def changer_errormessage(df):
     """
     Modifie les messages d'erreur pour les rendre plus explicites   
     """
 
-    df['Error Type'] = df['_ErrorMessage'].str.replace('Duplicate with', 'Perfect Duplicate with')
-    df['Error Type'] = df['Error Type'].str.replace(r'Duplicate value of field .*?(TR_)', 'Logical Duplicate with \\1',regex=True)
+    df['ErrorType'] = df['_ErrorMessage'].str.replace('Duplicate with', 'Perfect Duplicate with')
+    df['ErrorType'] = df['ErrorType'].str.replace(r'Duplicate value of field .*?(TR_)', 'Logical Duplicate with \\1',regex=True)
     # Suppression de la colonne _ErrorMessage
     df.drop('_ErrorMessage', axis=1, inplace=True)
     return df
@@ -203,11 +207,11 @@ def ajouter_data_quality_type(df):
     Ajouter la colonne DataQualityType
     """
     df['DataQualityType'] = 'not defined'
-    df.loc[df['Error Type'].str.contains('Duplicate'), 'DataQualityType'] = 'Duplicates'
-    df.loc[df['Error Type'].str.contains('PRODUCTION->trace'), 'DataQualityType'] = 'rec_no_prod'
-    df.loc[df['Error Type'].str.contains('trace ->MATERIAL-RECEPTION'), 'DataQualityType'] = 'mat-rec_not-found'
-    df.loc[df['Error Type'].str.contains('trace ->PRODUCTION'), 'DataQualityType'] = 'no_prod_in_prod'
-    df.loc[df['Error Type'].str.contains('PAIRING->trace'), 'DataQualityType'] = 'no_prod_in_pairing'
+    df.loc[df['ErrorType'].str.contains('Duplicate'), 'DataQualityType'] = 'Duplicates'
+    df.loc[df['ErrorType'].str.contains('PRODUCTION->trace'), 'DataQualityType'] = 'rec_no_prod'
+    df.loc[df['ErrorType'].str.contains('trace ->MATERIAL-RECEPTION'), 'DataQualityType'] = 'mat-rec_not-found'
+    df.loc[df['ErrorType'].str.contains('trace ->PRODUCTION'), 'DataQualityType'] = 'no_prod_in_prod'
+    df.loc[df['ErrorType'].str.contains('PAIRING->trace'), 'DataQualityType'] = 'no_prod_in_pairing'
     return df
 
 
@@ -237,22 +241,19 @@ def count_errors_by_type_and_manufacturer(df):
     et ajoute un résumé des totaux par manufacture et par type d'erreur sans considération des dates.
     """
     new_df = df.copy()
-    new_df['TraceType'] = df['ParentType']
+    new_df['ParentType'] = df['ParentType']
     new_df['Date'] = pd.to_datetime(df['createdAt']).dt.date
 
     # Détermination du type d'erreur
-    new_df['Error Type'] = df['Error Type'].apply(lambda x: 'Missing Relationship' if 'Missing' in x else 'Duplicate')
+    new_df['KPIType'] = df['ErrorType'].apply(lambda x: 'Missing Relationship' if 'Missing' in x else 'Duplicate')
 
-    # Groupement initial par TraceType, Manufacturer, Date et Error Type
-    detailed_summary_df = new_df.groupby(['TraceType', 'Manufacturer', 'Date', 'Error Type']).size().reset_index(name='Count')
+    # Groupement initial par TraceType, Manufacturer, Date et ErrorType
+    new_df = new_df.groupby(['ParentType', 'Manufacturer', 'Date', 'KPIType']).size().reset_index(name='Count')
+    new_df.insert(loc=0, column='TraceType', value='KPI-MONITORING')
+    new_df.insert(loc=1 , column ='TraceNumber',value=np.arange(1, len(new_df) + 1))
+    new_df['Deactivated'] = "False"
 
-    # Groupement supplémentaire par TraceType, Manufacturer et Error Type pour le total
-    overall_summary_df = new_df.groupby(['TraceType', 'Manufacturer', 'Error Type']).size().reset_index(name='Total Count')
-
-    # Combinaison des DataFrames détaillés et des totaux dans un seul DataFrame pour le retour
-    result_df = pd.concat([detailed_summary_df, overall_summary_df], ignore_index=True)
-
-    return result_df
+    return new_df
 
 def modify_error_type_carl(df):
     """
@@ -328,7 +329,9 @@ def modify_error_type_carl(df):
                 for part in parts:
                     word = extract_word(col)
                     lot_value = extract_lot_value(part)
-                    if 'trace->' in col:
+                    if 'trace->BRASSERIE-REC' in col:
+                        new_message = f"Absence BRASSERIE-OF amont dont {lot_value}"
+                    elif 'trace->' in col : 
                         new_message = f"Absence {word} amont dont {lot_value}"
                     else:
                         new_message = f"Absence {word} aval dont {lot_value}"
@@ -340,6 +343,6 @@ def modify_error_type_carl(df):
     df = df.apply(modify_message, axis=1)
     
     # Supprimer la colonne d'erreur d'origine
-    df.drop(columns=['Error Type'], inplace=True)
+    df.drop(columns=['ErrorType'], inplace=True)
 
     return df
