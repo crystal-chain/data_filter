@@ -289,17 +289,17 @@ def modify_error_type_carl(df):
                 if "trace->MALTERIE-EXP" in value : 
                     cleaned_value=cleaned_value.replace("BonLivraison","NumeroBL")
                 if "BRASSERIE-OF->trace" in value : 
-                    cleaned_value=cleaned_value.replace("NumeroLotReception","NumeroLotSource")
+                    cleaned_value=cleaned_value.replace("NumeroLotReception","C.NumeroLotSource")
             elif unique_tracetype=="MALTERIE-EXP" :
                 if "trace->MALTERIE-OF" in value:
-                    cleaned_value=cleaned_value.replace("C.Predecesseur","")
                     cleaned_value=cleaned_value.replace("C.PredecesseurCelluleOrigine","CelluleDestination")
+                    cleaned_value=cleaned_value.replace("C.Predecesseur","")
                 if "BRASSERIE-REC->trace" in value :
                     cleaned_value=cleaned_value.replace("NumeroBL","BonLivraison")
             elif unique_tracetype=="MALTERIE-OF":
                 if "trace->" in value :
-                    cleaned_value=cleaned_value.replace("C.Predecesseur","")
                     cleaned_value=cleaned_value.replace("C.PredecesseurCelluleOrigine","CelluleDestination")
+                    cleaned_value=cleaned_value.replace("C.Predecesseur","")
                 if "->trace" in value : 
                     cleaned_value=cleaned_value.replace("TypeFlux","C.PredecesseurTypeFlux")
                     cleaned_value=cleaned_value.replace("NumeroFlux","C.PredecesseurNumeroFlux")
@@ -317,7 +317,7 @@ def modify_error_type_carl(df):
 
     # Identifier toutes les colonnes qui contiennent '->'
     arrow_columns = [col for col in df.columns if '->' in col]
-   
+    col_names=["BRASSERIE-OF->trace","MALTERIE-OF->trace","MALTERIE-EXP->trace"]
     # Fonction pour modifier le message d'erreur
     def modify_message(row):
         for col in arrow_columns:
@@ -329,8 +329,8 @@ def modify_error_type_carl(df):
                 for part in parts:
                     word = extract_word(col)
                     lot_value = extract_lot_value(part)
-                    if 'trace->BRASSERIE-REC' in col:
-                        new_message = f"Absence BRASSERIE-OF amont dont {lot_value}"
+                    if col in col_names : 
+                        new_message = f"Absence {word} aval dont un {lot_value}"
                     elif 'trace->' in col : 
                         new_message = f"Absence {word} amont dont {lot_value}"
                     else:

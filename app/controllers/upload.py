@@ -81,7 +81,7 @@ def upload_file_medor():
                     zip_buffer,
                     as_attachment=True,
                     mimetype='application/zip',
-                    download_name=f'filtred_data_{file.filename}.zip'
+                    download_name=f'filtered_data_{file.filename}.zip'
                     )
             except Exception as e:
               return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')
@@ -141,7 +141,7 @@ def upload_file_carl():
                     zip_buffer,
                     as_attachment=True,
                     mimetype='application/zip',
-                    download_name=f'filtred_data_{file.filename}.zip'
+                    download_name=f'filtered_data_{file.filename}.zip'
                     )
 
             except Exception as e:
