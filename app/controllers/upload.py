@@ -103,45 +103,60 @@ def upload_file_carl():
             return render_template('upload.html', error_message='Aucun fichier sélectionné.')
     
         if file and allowed_file(file.filename):
-            try:
-                df = pd.read_csv(file, sep=";", low_memory=False)
+            try:   
+                # Lire le fichier en chunks
+                chunks = pd.read_csv(file, sep=";", low_memory=False, chunksize=10000)
                 
+                list_logic_duplicates = []
+                list_perfect_duplicates = []
+                list_missing_relationships = []
+                
+                for chunk in chunks:
+                    # Modifier le champ _ErrorMessage en ErrorType
+                    chunk = changer_errormessage(chunk)
+                    # Supprimer les lignes vides et colonnes vides
+                    chunk = nettoyer_ligne_colonne(chunk)
 
+                    # Filtrer les données pour chaque type d'erreur
+                    df_logic_duplicate_chunk = chunk[chunk['ErrorType'].str.startswith('Logical Duplicate with')]
+                    df_perfect_duplicate_chunk = chunk[chunk['ErrorType'].str.startswith('Perfect Duplicate with')]
+                    df_missing_relationship_chunk = chunk[chunk['ErrorType'].str.startswith('Missing relationship')]
 
-                # Modifier le champ _ErrorMessage en ErrorType
-                df = changer_errormessage(df)
+                    # Ajouter les chunks aux listes correspondantes
+                    list_logic_duplicates.append(df_logic_duplicate_chunk)
+                    list_perfect_duplicates.append(df_perfect_duplicate_chunk)
+                    list_missing_relationships.append(df_missing_relationship_chunk)
+                
+                # Concaténer les chunks en DataFrames complets
+                df_logic_duplicate = pd.concat(list_logic_duplicates)
+                df_perfect_duplicate = pd.concat(list_perfect_duplicates)
+                df_missing_relationship = pd.concat(list_missing_relationships)
+                
+                # Classifier les types d'erreur dans une colonne spécifiée
+                df_missing_relationship = sort_missing_relationships(df_missing_relationship)
 
-                # Supprimer les lignes vides et colonnes vides 
-                df = nettoyer_ligne_colonne(df)
-
-                meta = df.head(0)
-                ddf=dd.from_pandas(df,npartitions=20)
-
-                # Filtrer les données pour chaque type d'erreur
-                df_logic_duplicate = ddf[ddf['ErrorType'].str.startswith('Logical Duplicate with')]
-                df_perfect_duplicate = ddf[ddf['ErrorType'].str.startswith('Perfect Duplicate with')]
-                df_missing_relationship = ddf[ddf['ErrorType'].str.startswith('Missing relationship')]
-                # Traduction du message de log par quelque chose de plus intelligible par le client 
-
-                df_missing_relationship = df_missing_relationship.map_partitions(modify_error_type_carl,meta=meta)
-
-                df_logic_duplicate = df_logic_duplicate.compute()
-                df_perfect_duplicate = df_perfect_duplicate.compute()
-                df_missing_relationship = df_missing_relationship.compute()
-
-                # Classifier les types d'erreur dans une colonne spécifiée 
-                df_missing_relationship = sort_missing_relationships(df_missing_relationship)   
                 # Garder la première occurrence pour les Missing relationship
-                df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship,"traceId")
-                # Supprimer la colone de errormessage
+                df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship, "traceId")
+
+                # Appliquer modify_error_type_carl en chunks
+                chunk_size = 10000
+                df_modified_chunks = []
+                for start in range(0, len(df_missing_relationship), chunk_size):
+                    df_chunk = df_missing_relationship.iloc[start:start + chunk_size]
+                    df_modified_chunk = modify_error_type_carl(df_chunk)
+                    df_modified_chunks.append(df_modified_chunk)
+
+                # Concaténer les chunks modifiés
+                df_missing_relationship = pd.concat(df_modified_chunks)
+
                 df_missing_relationship.drop(columns=['ErrorType'], inplace=True)
 
-                file.filename="_".join(file.filename.split("_")[:3])
+                file.filename = "_".join(file.filename.split("_")[:3])
 
-                excel_buffer= BytesIO()
-                save_dfs_to_excel(df_logic_duplicate,df_perfect_duplicate,df_missing_relationship,excel_buffer)
+                excel_buffer = BytesIO()
+                save_dfs_to_excel(df_logic_duplicate, df_perfect_duplicate, df_missing_relationship, excel_buffer)
 
-                zip_buffer=BytesIO()
+                zip_buffer = BytesIO()
                 
                 with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED, False) as zip_file:
                     # Ajouter les fichiers CSV dans le fichier ZIP en utilisant les noms de fichiers construits
@@ -156,8 +171,7 @@ def upload_file_carl():
                     as_attachment=True,
                     mimetype='application/zip',
                     download_name=f'filtered_data_{file.filename}.zip'
-                    )
-
+                )
             except Exception as e:
               return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')
         else:
