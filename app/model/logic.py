@@ -52,9 +52,15 @@ def keep_first_occurrence_for_missing_relationship(df,col_name):
     # Garder la première occurrence de chaque TraceId
     first_occurrence_idx = df_missing_relationship[col_name].drop_duplicates(keep='first').index
 
-    # Garder les valeurs pour la première occurrence de chaque TraceId et les autres valeurs à NaN
+   # Copier le DataFrame pour le modifier
     df_missing_relationship_masked = df_missing_relationship.copy()
-    df_missing_relationship_masked.loc[~df_missing_relationship_masked.index.isin(first_occurrence_idx), ~mask] = np.nan
+
+    # Convertir les colonnes non incluses dans le masque en type 'object' pour permettre l'affectation de chaînes vides
+    cols_to_convert = df_missing_relationship_masked.columns[~mask].tolist()
+    df_missing_relationship_masked[cols_to_convert] = df_missing_relationship_masked[cols_to_convert].astype(object)
+
+    # Garder les valeurs pour la première occurrence de chaque TraceId et les autres valeurs à une chaîne vide
+    df_missing_relationship_masked.loc[~df_missing_relationship_masked.index.isin(first_occurrence_idx), ~mask] = ''
 
     return df_missing_relationship_masked
 
