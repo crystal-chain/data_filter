@@ -309,7 +309,6 @@ def modify_error_type_carl(df):
                     cleaned_value=cleaned_value.replace("TypeFlux","C.PredecesseurTypeFlux")
                     cleaned_value=cleaned_value.replace("NumeroFlux","C.PredecesseurNumeroFlux")
                     cleaned_value=cleaned_value.replace("CelluleDestination","C.PredecesseurCelluleOrigine")
-                  
             return cleaned_value
         else:
             return None
@@ -343,6 +342,5 @@ def modify_error_type_carl(df):
     df = df.apply(modify_message, axis=1)
     
     # Supprimer la colonne d'erreur d'origine
-    df.drop(columns=['ErrorType'], inplace=True)
 
     return df

@@ -5,6 +5,9 @@ from io import BytesIO
 import os
 import zipfile
 from datetime import datetime
+import dask.dataframe as dd
+
+
 
 upload_blueprint = Blueprint('upload', __name__)
 
@@ -102,6 +105,8 @@ def upload_file_carl():
         if file and allowed_file(file.filename):
             try:
                 df = pd.read_csv(file, sep=";", low_memory=False)
+                
+
 
                 # Modifier le champ _ErrorMessage en ErrorType
                 df = changer_errormessage(df)
@@ -109,18 +114,27 @@ def upload_file_carl():
                 # Supprimer les lignes vides et colonnes vides 
                 df = nettoyer_ligne_colonne(df)
 
+                meta = df.head(0)
+                ddf=dd.from_pandas(df,npartitions=20)
+
                 # Filtrer les données pour chaque type d'erreur
-                df_logic_duplicate = df[df['ErrorType'].str.startswith('Logical Duplicate with')]
-                df_perfect_duplicate = df[df['ErrorType'].str.startswith('Perfect Duplicate with')]
-                df_missing_relationship = df[df['ErrorType'].str.startswith('Missing relationship')]
+                df_logic_duplicate = ddf[ddf['ErrorType'].str.startswith('Logical Duplicate with')]
+                df_perfect_duplicate = ddf[ddf['ErrorType'].str.startswith('Perfect Duplicate with')]
+                df_missing_relationship = ddf[ddf['ErrorType'].str.startswith('Missing relationship')]
+                # Traduction du message de log par quelque chose de plus intelligible par le client 
 
+                df_missing_relationship = df_missing_relationship.map_partitions(modify_error_type_carl,meta=meta)
 
-                #  Classifier les types d'erreur dans une colonne spécifiée 
+                df_logic_duplicate = df_logic_duplicate.compute()
+                df_perfect_duplicate = df_perfect_duplicate.compute()
+                df_missing_relationship = df_missing_relationship.compute()
+
+                # Classifier les types d'erreur dans une colonne spécifiée 
                 df_missing_relationship = sort_missing_relationships(df_missing_relationship)   
                 # Garder la première occurrence pour les Missing relationship
                 df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship,"traceId")
-                # Traduction du message de log par quelque chose de plus intelligible par le client 
-                df_missing_relationship=modify_error_type_carl(df_missing_relationship)
+                # Supprimer la colone de errormessage
+                df_missing_relationship.drop(columns=['ErrorType'], inplace=True)
 
                 file.filename="_".join(file.filename.split("_")[:3])
 
