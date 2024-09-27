@@ -50,6 +50,7 @@ def keep_first_occurrence_for_missing_relationship(df,col_name):
     mask = df.columns.isin(columns_to_keep) | (df.columns == 'ErrorType')
 
     # Garder la première occurrence de chaque TraceId
+
     first_occurrence_idx = df_missing_relationship[col_name].drop_duplicates(keep='first').index
 
    # Copier le DataFrame pour le modifier
@@ -61,7 +62,8 @@ def keep_first_occurrence_for_missing_relationship(df,col_name):
 
     # Garder les valeurs pour la première occurrence de chaque TraceId et les autres valeurs à une chaîne vide
     df_missing_relationship_masked.loc[~df_missing_relationship_masked.index.isin(first_occurrence_idx), ~mask] = ''
-
+    
+    
     return df_missing_relationship_masked
 
 def add_columns_and_remove(df):
@@ -70,12 +72,13 @@ def add_columns_and_remove(df):
     """
     # Faire une copie du DataFrame pour éviter les avertissements "SettingWithCopyWarning"
     df = df.copy()
+    if 'ParentType' in df.columns and 'ParentNumber' in df.columns:
 
-    # Ajouter une colonne TraceType avec "DATA-QUALITY-" + contenu de ParentType
-    df.insert(0, 'TraceType', 'DATA-QUALITY-' + df['ParentType'])
+        # Ajouter une colonne TraceType avec "DATA-QUALITY-" + contenu de ParentType
+        df.insert(0, 'TraceType', 'DATA-QUALITY-' + df['ParentType'])
 
-    # Ajouter une colonne TraceNumber avec le contenu de ParentNumber
-    df.insert(1, 'TraceNumber', df['ParentNumber'])
+        # Ajouter une colonne TraceNumber avec le contenu de ParentNumber
+        df.insert(1, 'TraceNumber', df['ParentNumber'])
 
     df['TimeSinceError'] = pd.to_datetime(df['createdAt']).dt.strftime('%Y / %m / %d')
 
@@ -161,6 +164,9 @@ def sort_missing_relationships(df):
     # Dictionnaire pour accumuler les colonnes d'erreurs uniques
     error_columns = {}
 
+    # Vérifiez la longueur du DataFrame
+    df_len = len(df)
+
     # Parcourir chaque ligne du DataFrame
     for index, row in df.iterrows():
         # Extraire les types d'erreur de l'erreur actuelle
@@ -168,18 +174,24 @@ def sort_missing_relationships(df):
         for error_type, content in current_error_types:
             # Créer la colonne si elle n'existe pas déjà
             if error_type not in error_columns:
-                error_columns[error_type] = [''] * len(df)
+                error_columns[error_type] = [''] * df_len  # Assurez-vous que la longueur correspond au DataFrame
+
             # Ajouter le contenu spécifique à cette occurrence d'erreur
-            if error_columns[error_type][index]:
-                error_columns[error_type][index] += ',\n' + f"{error_type} ({content})"
+            if index < df_len:  # Vérifiez que l'index est bien dans les limites
+                if error_columns[error_type][index]:
+                    error_columns[error_type][index] += ',\n' + f"{error_type} ({content})"
+                else:
+                    error_columns[error_type][index] = f"{error_type} ({content})"
             else:
-                error_columns[error_type][index] = f"{error_type} ({content})"
+                # Log en cas de problème d'index
+                print(f"Problème d'index : {index} est hors des limites pour {error_type}")
 
     # Ajouter les colonnes d'erreur au DataFrame
     for error_type, contents in error_columns.items():
         df[error_type] = contents
 
     return df
+
 
  # Modification du champ _ErrorMessage en ErrorType
 def changer_errormessage(df):
@@ -283,9 +295,9 @@ def modify_error_type_carl(df):
             if unique_tracetype=="BRASSERIE-COND":
                 cleaned_value = cleaned_value.replace("NumeroLotProductionSource", "NumeroLotProduction")   
             elif unique_tracetype=="BRASSERIE-OF":
-                if "trace->BRASSERIE-REC " in value : 
+                if "trace->BRASSERIE-REC" in value : 
                     cleaned_value = cleaned_value.replace("C.NumeroLotSource", "NumeroLotReception ")  
-                if "trace -> BRASSERIE-OF" in value : 
+                if "trace->BRASSERIE-OF" in value : 
                     cleaned_value=cleaned_value.replace("C.NumeroLotSource","NumeroLotProduction")
                 if "BRASSERIE-COND->trace" in value : 
                     cleaned_value=cleaned_value.replace("NumeroLotProduction","NumeroLotProductionSource ")
@@ -329,7 +341,6 @@ def modify_error_type_carl(df):
             if isinstance(row[col], str) and row[col].strip():  # Vérifier si la cellule a une valeur non vide
                 parts = re.split(r'\),\s*',row[col])
                 parts = [part + ')' if not part.endswith(')') and part else part for part in parts]
-
                 modified_parts = []
                 for part in parts:
                     word = extract_word(col)

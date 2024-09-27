@@ -33,6 +33,7 @@ def upload_file_medor():
                 df = changer_errormessage(df)
                 # Cree le CSV de KPI
                 df_kpi=count_errors_by_type_and_manufacturer(df)
+                
 
                 # Supprimer les lignes vides et colonnes vides 
                 df = nettoyer_ligne_colonne(df)
@@ -52,14 +53,17 @@ def upload_file_medor():
                 df_logic_duplicate = add_columns_and_remove(df_logic_duplicate)
                 df_perfect_duplicate = add_columns_and_remove(df_perfect_duplicate)
                 df_missing_relationship = add_columns_and_remove(df_missing_relationship)
-
+                print(f"Colonnes après le chargement du fichier: {df.columns.tolist()}")
+                print(f"Taille du DataFrame après le chargement: {df.shape}") 
                 # Classifier les types d'erreur dans une colonne spécifiée 
-                df_missing_relationship = sort_missing_relationships(df_missing_relationship)   
+                df_missing_relationship = sort_missing_relationships(df_missing_relationship)  
+                
                 # Garder la première occurrence pour les Missing relationship
                 df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship,"ParentId")
                 # Traduction du message de log par quelque chose de plus intelligible par le client 
                 df_missing_relationship=modify_error_type(df_missing_relationship)
 
+                
                 # Ajout de la date d'aujourd'hui
                 today = datetime.today().strftime('%Y-%m-%d')
 
@@ -95,7 +99,7 @@ def upload_file_medor():
 @upload_blueprint.route('/carlsberg', methods=['GET','POST'])
 def upload_file_carl():
     if request.method == 'POST':
-        if 'file' not in request.files :
+        if 'file' not in request.files:
             return render_template('upload.html', error_message='Aucun fichier téléchargé.')
 
         file = request.files['file']
@@ -104,50 +108,32 @@ def upload_file_carl():
     
         if file and allowed_file(file.filename):
             try:   
-                # Lire le fichier en chunks
-                chunks = pd.read_csv(file, sep=";", low_memory=False, chunksize=10000)
+                df = pd.read_csv(file, sep=";", low_memory=False)
                 
-                list_logic_duplicates = []
-                list_perfect_duplicates = []
-                list_missing_relationships = []
-                
-                for chunk in chunks:
-                    # Modifier le champ _ErrorMessage en ErrorType
-                    chunk = changer_errormessage(chunk)
-                    # Supprimer les lignes vides et colonnes vides
-                    chunk = nettoyer_ligne_colonne(chunk)
+                # Modifier le champ _ErrorMessage en ErrorType
+                df = changer_errormessage(df)
+                # Supprimer les lignes vides et colonnes vides 
+                df = nettoyer_ligne_colonne(df)
 
-                    # Filtrer les données pour chaque type d'erreur
-                    df_logic_duplicate_chunk = chunk[chunk['ErrorType'].str.startswith('Logical Duplicate with')]
-                    df_perfect_duplicate_chunk = chunk[chunk['ErrorType'].str.startswith('Perfect Duplicate with')]
-                    df_missing_relationship_chunk = chunk[chunk['ErrorType'].str.startswith('Missing relationship')]
+                # Filtrer les données pour chaque type d'erreur
+                df_logic_duplicate = df[df['ErrorType'].str.startswith('Logical Duplicate with')]
+                df_perfect_duplicate = df[df['ErrorType'].str.startswith('Perfect Duplicate with')]
+                df_missing_relationship = df[df['ErrorType'].str.startswith('Missing relationship')]
 
-                    # Ajouter les chunks aux listes correspondantes
-                    list_logic_duplicates.append(df_logic_duplicate_chunk)
-                    list_perfect_duplicates.append(df_perfect_duplicate_chunk)
-                    list_missing_relationships.append(df_missing_relationship_chunk)
-                
-                # Concaténer les chunks en DataFrames complets
-                df_logic_duplicate = pd.concat(list_logic_duplicates)
-                df_perfect_duplicate = pd.concat(list_perfect_duplicates)
-                df_missing_relationship = pd.concat(list_missing_relationships)
-                
-                # Classifier les types d'erreur dans une colonne spécifiée
+                # Classifier les types d'erreur dans une colonne spécifiée 
                 df_missing_relationship = sort_missing_relationships(df_missing_relationship)
 
                 # Garder la première occurrence pour les Missing relationship
                 df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship, "traceId")
 
-                # Appliquer modify_error_type_carl en chunks
-                chunk_size = 10000
-                df_modified_chunks = []
-                for start in range(0, len(df_missing_relationship), chunk_size):
-                    df_chunk = df_missing_relationship.iloc[start:start + chunk_size]
-                    df_modified_chunk = modify_error_type_carl(df_chunk)
-                    df_modified_chunks.append(df_modified_chunk)
+                # Convertir en Dask DataFrame pour utiliser modify_error_type_carl
+                ddf_missing_relationship = dd.from_pandas(df_missing_relationship, npartitions=15)
 
-                # Concaténer les chunks modifiés
-                df_missing_relationship = pd.concat(df_modified_chunks)
+                # Appliquer la fonction modifiée pour Dask
+                ddf_missing_relationship = ddf_missing_relationship.map_partitions(modify_error_type_carl, meta=df_missing_relationship.head(0))
+
+                # Calculer le résultat final
+                df_missing_relationship = ddf_missing_relationship.compute()
 
                 df_missing_relationship.drop(columns=['ErrorType'], inplace=True)
 
@@ -172,8 +158,10 @@ def upload_file_carl():
                     mimetype='application/zip',
                     download_name=f'filtered_data_{file.filename}.zip'
                 )
+
             except Exception as e:
-              return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')
+                return render_template('upload.html', error_message=f'Erreur lors du traitement du fichier : {str(e)}')
         else:
             return render_template('upload.html', error_message='Extension de fichier non autorisée.')
     return render_template('upload.html')
+            
