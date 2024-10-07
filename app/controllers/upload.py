@@ -56,7 +56,7 @@ def upload_file_medor():
                 print(f"Colonnes après le chargement du fichier: {df.columns.tolist()}")
                 print(f"Taille du DataFrame après le chargement: {df.shape}") 
                 # Classifier les types d'erreur dans une colonne spécifiée 
-                df_missing_relationship = sort_missing_relationships(df_missing_relationship)  
+                df_missing_relationship = sort_missing_relationships(df_missing_relationship.copy())  
                 
                 # Garder la première occurrence pour les Missing relationship
                 df_missing_relationship = keep_first_occurrence_for_missing_relationship(df_missing_relationship,"ParentId")

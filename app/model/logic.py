@@ -158,7 +158,7 @@ def extract_error_types(error_type):
 
 
 def sort_missing_relationships(df):
-    """
+    """f
     Trie et organise les erreurs de relations manquantes dans des colonnes dédiées
     """
     # Dictionnaire pour accumuler les colonnes d'erreurs uniques
