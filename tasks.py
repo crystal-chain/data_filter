@@ -15,7 +15,7 @@ from openpyxl.comments import Comment
 def generate_templates_task(self):
     # Connexion à la base et lecture de la table "test"
     engine = get_engine()
-    df = pd.read_sql(text("SELECT * FROM test"), engine)
+    df = pd.read_sql(text("SELECT * FROM fournisseur_produit"), engine)
     self.update_state(state='PROGRESS', meta={'progress': 10, 'message': 'Données chargées'})
     
     # Définition du mapping type/template
