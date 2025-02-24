@@ -21,9 +21,7 @@ services:
       - SFTP_PRIVATE_KEY_PATH=${SFTP_PRIVATE_KEY_PATH}
       - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
     volumes:
-      - .:/app
       - shared_tmp:/tmp/shared
-      - ./ssh:/app/ssh:ro
 
     depends_on:
       - rabbitmq
@@ -50,7 +48,6 @@ services:
       - SFTP_PRIVATE_KEY_PATH=${SFTP_PRIVATE_KEY_PATH}
       - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
     volumes:
-      - .:/app
       - shared_tmp:/tmp/shared
       
     depends_on:
