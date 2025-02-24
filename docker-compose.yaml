@@ -13,6 +13,9 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
+      - API_URL=${API_URL}
+      - EMAIL=${EMAIL}
+      - PASSWORD=${PASSWORD}
       - TEMPLATES_DIR=/templates
       - CELERY_BROKER_URL=pyamqp://guest@rabbitmq//
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -21,9 +24,7 @@ services:
       - SFTP_PRIVATE_KEY_PATH=${SFTP_PRIVATE_KEY_PATH}
       - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
     volumes:
-      - .:/app
       - shared_tmp:/tmp/shared
-      - ./ssh:/app/ssh:ro
 
     depends_on:
       - rabbitmq
@@ -50,7 +51,6 @@ services:
       - SFTP_PRIVATE_KEY_PATH=${SFTP_PRIVATE_KEY_PATH}
       - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
     volumes:
-      - .:/app
       - shared_tmp:/tmp/shared
       
     depends_on:
