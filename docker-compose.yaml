@@ -4,9 +4,7 @@ services:
     container_name: data_filter
     build: .
     ports:
-      - "6575:5000"
-    env_file:
-      - .env
+      - "5000:5000"
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=development
@@ -31,15 +29,11 @@ services:
       - rabbitmq
       - postgres
       - redis
-    networks:
-      - mpxnet
 
   celery_worker:
     container_name: celery_worker
     build: .
     command: celery -A celery_app worker --loglevel=info
-    env_file:
-      - .env
     environment:
       - FLASK_APP=run.py
       - FLASK_ENV=development
@@ -63,43 +57,25 @@ services:
       - rabbitmq
       - postgres
       - redis
-    networks:
-      - mpxnet
 
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    networks:
-      - mpxnet
 
   postgres:
     container_name: postgres
     image: postgres:latest
-    env_file:
-      - .env
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "5433:5432"
-    networks:
-      - mpxnet
+
 
   redis:
     container_name: redis
     image: redis:alpine
-    ports:
-      - "6379:6379"
-    networks:
-      - mpxnet
 
-networks:
-  mpxnet:
-    driver: bridge
+
 
 volumes:
   shared_tmp:
