@@ -1,7 +1,105 @@
 version: '3.3'
 services:
-  data_filter:
+  web:
     container_name: data_filter
-    image: 173367659232.dkr.ecr.eu-west-1.amazonaws.com/crystalchain/data_filter:latest
+    build: .
     ports:
       - "6575:5000"
+    env_file:
+      - .env
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_ENV=development
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - TEMPLATES_DIR=/templates
+      - CELERY_BROKER_URL=pyamqp://guest@rabbitmq//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SFTP_SERVER=${SFTP_SERVER}
+      - SFTP_USERNAME=${SFTP_USERNAME}
+      - SFTP_PRIVATE_KEY_PATH=${SFTP_PRIVATE_KEY_PATH}
+      - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
+    volumes:
+      - .:/app
+      - shared_tmp:/tmp/shared
+      - ./ssh:/app/ssh:ro
+
+    depends_on:
+      - rabbitmq
+      - postgres
+      - redis
+    networks:
+      - mpxnet
+
+  celery_worker:
+    container_name: celery_worker
+    build: .
+    command: celery -A celery_app worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_ENV=development
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - TEMPLATES_DIR=/templates
+      - CELERY_BROKER_URL=pyamqp://guest@rabbitmq//
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - SFTP_SERVER=${SFTP_SERVER}
+      - SFTP_USERNAME=${SFTP_USERNAME}
+      - SFTP_PRIVATE_KEY_PATH=${SFTP_PRIVATE_KEY_PATH}
+      - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
+    volumes:
+      - .:/app
+      - shared_tmp:/tmp/shared
+      
+    depends_on:
+      - rabbitmq
+      - postgres
+      - redis
+    networks:
+      - mpxnet
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - mpxnet
+
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    networks:
+      - mpxnet
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - mpxnet
+
+networks:
+  mpxnet:
+    driver: bridge
+
+volumes:
+  shared_tmp:

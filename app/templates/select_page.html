@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Choix de la page</title>
+    <script src="{{ url_for('static', filename='js/integration.js') }}"></script>
 </head>
 <body>
     <h1>Choisissez une page :</h1>
@@ -12,6 +13,9 @@
     </form>
     <form action="/medor" method="post">
         <input type="submit" value="MEDOR">
+    </form>
+    <form id="monoprix-form" action="/monoprix" method="get">
+        <input type="submit" id="monoprix-btn" value="MONOPRIX">
     </form>
 </body>
 </html>
