@@ -4,7 +4,6 @@ import os
 from dotenv import load_dotenv  # type: ignore
 from sqlalchemy import  text  # type: ignore
 import sys
-# Ajouter le dossier parent (csv_to_db) au PYTHONPATH dynamiquement
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from get_engine import get_engine  # Corrige l'import
 
@@ -13,7 +12,7 @@ def setup_logger():
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.FileHandler("project.log", mode='a'),  # Append mode, single log file for the entire project
+            logging.FileHandler("project.log", mode='a'), 
             logging.StreamHandler()
         ]
     )

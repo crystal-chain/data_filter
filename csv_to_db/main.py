@@ -37,7 +37,7 @@ def process_and_update(sftp, remote_path, file_name):
     """
     try:
         file_type = get_file_type(file_name)
-        print(f"📂 Traitement du fichier {file_name} de type {file_type}")
+        print(f"Traitement du fichier {file_name} de type {file_type}")
         
         # Récupération du fichier depuis SFTP
         file_stream = BytesIO()
@@ -68,7 +68,7 @@ def process_and_update(sftp, remote_path, file_name):
         
         # Si les deux fichiers sont reçus, on fusionne les données
         if all(files_received.values()):
-            print("✅ Fusion des données fournisseur/produit")
+            print("Fusion des données fournisseur/produit")
             merge_staging_to_final(engine)
             clear_staging_table(engine, "staging_fournisseur")
             clear_staging_table(engine, "staging_produit")
@@ -76,13 +76,13 @@ def process_and_update(sftp, remote_path, file_name):
             files_received["produit"] = False
             
     except Exception as e:
-        print(f"⚠️ Erreur lors du traitement du fichier {file_name} : {e}")
+        print(f"Erreur lors du traitement du fichier {file_name} : {e}")
 
 def main():
     """
     Exécute le traitement des fichiers du jour.
     """
-    print("🚀 Lancement du traitement des fichiers SFTP...")
+    print("Lancement du traitement des fichiers SFTP...")
     
     sftp, remote_path = connect_to_sftp()
     
