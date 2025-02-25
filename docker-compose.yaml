@@ -27,7 +27,7 @@ services:
       - shared_tmp:/tmp/shared
     networks:
       datafilter_network:
-        ipv4_address: 172.19.0.2
+        ipv4_address: 172.23.0.2
 
 
     depends_on:
@@ -58,7 +58,7 @@ services:
       - shared_tmp:/tmp/shared
     networks:
       datafilter_network:
-        ipv4_address: 172.19.0.3
+        ipv4_address: 172.23.0.3
       
     depends_on:
       - rabbitmq
@@ -70,7 +70,7 @@ services:
     image: rabbitmq:3-management
     networks:
       datafilter_network:
-        ipv4_address: 172.19.0.4
+        ipv4_address: 172.23.0.4
 
   postgres:
     container_name: postgres
@@ -83,21 +83,21 @@ services:
       - db-data:/var/lib/postgresql/data
     networks:
       datafilter_network:
-        ipv4_address: 172.19.0.5
+        ipv4_address: 172.23.0.5
 
   redis:
     container_name: redis
     image: redis:alpine
     networks:
       datafilter_network:
-        ipv4_address: 172.19.0.6
+        ipv4_address: 172.23.0.6
 
 networks:
   datafilter_network:
     ipam:
       config:
-        - subnet: 172.19.0.0/16
-          gateway: 172.19.0.1
+        - subnet: 172.23.0.0/16
+          gateway: 172.23.0.1
 
 volumes:
   shared_tmp:
