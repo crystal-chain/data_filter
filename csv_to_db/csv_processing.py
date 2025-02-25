@@ -40,9 +40,7 @@ def process_csv_file(file_stream, table_name, file_name):
         print(f"Colonnes traitées ({table_name}) : {trimmed_columns}")
 
 
-        
-        # Filtrer les lignes où toutes les colonnes sont nulles
-        df = df.filter(~pl.all_horizontal(pl.all().is_null()))
+        # df = df.filter(~pl.all_horizontal(pl.all().is_null()))
         
         
 
