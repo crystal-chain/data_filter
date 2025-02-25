@@ -25,6 +25,10 @@ services:
       - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
     volumes:
       - shared_tmp:/tmp/shared
+    networks:
+      datafilter_network:
+        ipv4_address: 172.19.0.2
+
 
     depends_on:
       - rabbitmq
@@ -52,6 +56,9 @@ services:
       - SFTP_REMOTE_PATH=${SFTP_REMOTE_PATH}
     volumes:
       - shared_tmp:/tmp/shared
+    networks:
+      datafilter_network:
+        ipv4_address: 172.19.0.3
       
     depends_on:
       - rabbitmq
@@ -61,6 +68,9 @@ services:
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
+    networks:
+      datafilter_network:
+        ipv4_address: 172.19.0.4
 
   postgres:
     container_name: postgres
@@ -71,14 +81,23 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
-  
-
+    networks:
+      datafilter_network:
+        ipv4_address: 172.19.0.5
 
   redis:
     container_name: redis
     image: redis:alpine
+    networks:
+      datafilter_network:
+        ipv4_address: 172.19.0.6
 
-
+networks:
+  datafilter_network:
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16
+          gateway: 172.19.0.1
 
 volumes:
   shared_tmp:
