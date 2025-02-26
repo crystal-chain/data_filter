@@ -39,7 +39,6 @@ pip-log.txt
 pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
-.trunk/
 .tox/
 .nox/
 .coverage
@@ -131,7 +130,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
+.trunk/
+trunk/
 # Spyder project settings
 .spyderproject
 .spyproject
