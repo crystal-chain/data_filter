@@ -284,7 +284,7 @@ def merge_staging_to_final(engine):
       "Inactif" = COALESCE(EXCLUDED."Inactif", fournisseur_produit."Inactif"),
       "code_traitement" = COALESCE(EXCLUDED."code_traitement", fournisseur_produit."code_traitement"),
       "source_file" = COALESCE(EXCLUDED."source_file", fournisseur_produit."source_file")
-    """)
+    """) 
     with engine.begin() as conn:
         conn.execute(merge_query)
     print("Mise à jour de la table fournisseur_produit effectuée avec succès.")
