@@ -63,9 +63,20 @@ def generate_templates_task(self):
     
     # Utiliser un répertoire partagé pour stocker les fichiers générés
     shared_dir = "/tmp/shared"  
-    # Supprimer le dossier s'il existe et le recréer
+    # Vérifier si le dossier existe
     if os.path.exists(shared_dir):
-        shutil.rmtree(shared_dir) 
+        # Supprimer uniquement les fichiers et sous-dossiers sans supprimer `shared_dir`
+        for filename in os.listdir(shared_dir):
+            file_path = os.path.join(shared_dir, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path) 
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path) 
+            except Exception as e:
+                print(f"Erreur lors de la suppression de {file_path}: {e}")
+
+    # S'assurer que le dossier existe bien après le nettoyage
     os.makedirs(shared_dir, exist_ok=True)
     zip_filename = os.path.join(shared_dir, 'generated_templates.zip')
     
