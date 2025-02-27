@@ -17,7 +17,7 @@ def generate_templates_task(self):
     engine = get_engine()
     engine.dispose()  
     engine = get_engine()
-    df = pd.read_sql(text("SELECT * FROM fournisseur_produit"), engine)
+    df = pd.read_sql(text("SELECT * FROM fournisseur_produit WHERE status = 'ABSENT'"), engine)
     self.update_state(state='PROGRESS', meta={'progress': 10, 'message': 'Données chargées'})
     
     # Définition du mapping type/template
@@ -52,7 +52,7 @@ def generate_templates_task(self):
     # Appliquer les filtres
     if 'status' in df.columns:
         df = df[df['status'] == 'ABSENT']
-        # print("status existe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        print("status existe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     df = df[df['Type_de_produit'].str.contains('|'.join(type_produit_to_template.keys()), case=False, na=False)]
     
     # Regroupement par fournisseur (en supposant que la colonne "nom_fournisseur" existe)
