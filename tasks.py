@@ -10,6 +10,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.comments import Comment
+import shutil
 
 @celery_app.task(bind=True)
 def generate_templates_task(self):
@@ -62,6 +63,9 @@ def generate_templates_task(self):
     
     # Utiliser un répertoire partagé pour stocker les fichiers générés
     shared_dir = "/tmp/shared"  
+    # Supprimer le dossier s'il existe et le recréer
+    if os.path.exists(shared_dir):
+        shutil.rmtree(shared_dir) 
     os.makedirs(shared_dir, exist_ok=True)
     zip_filename = os.path.join(shared_dir, 'generated_templates.zip')
     
@@ -69,7 +73,7 @@ def generate_templates_task(self):
     templates_dir = 'NEW Templates'
     
     for fournisseur, data in groups:
-        print(f"Fournisseur: {fournisseur}, Status uniques: {data['status'].unique()}")
+        # print(f"Fournisseur: {fournisseur}, Status uniques: {data['status'].unique()}")
 
         current_group += 1
         progress = 10 + int((current_group / total_groups) * 80)  
@@ -82,6 +86,7 @@ def generate_templates_task(self):
         
         for type_produit, template_file_name in type_produit_to_template.items():
             fournisseur_data = data[data['Type_de_produit'].str.contains(type_produit, case=False, na=False)]
+            # print(f"Fournisseur: {fournisseur}, Type: {type_produit}, Status: {fournisseur_data['status'].unique()}")
             # print("fournisseur data : ", fournisseur_data)
             if fournisseur_data.empty:
                 continue
