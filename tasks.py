@@ -54,7 +54,7 @@ def generate_templates_task(self):
         df = df[df['status'] == 'ABSENT']
         print("status existe !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     df = df[df['Type_de_produit'].str.contains('|'.join(type_produit_to_template.keys()), case=False, na=False)]
-    
+    print(df['status'])
     # Regroupement par fournisseur (en supposant que la colonne "nom_fournisseur" existe)
     groups = list(df.groupby('nom_fournisseur'))
     total_groups = len(groups)
@@ -69,6 +69,8 @@ def generate_templates_task(self):
     templates_dir = 'NEW Templates'
     
     for fournisseur, data in groups:
+        print(f"Fournisseur: {fournisseur}, Status uniques: {data['status'].unique()}")
+
         current_group += 1
         progress = 10 + int((current_group / total_groups) * 80)  
         self.update_state(state='PROGRESS', meta={'progress': progress, 'message': f'Traitement du fournisseur {fournisseur}'})
@@ -80,7 +82,7 @@ def generate_templates_task(self):
         
         for type_produit, template_file_name in type_produit_to_template.items():
             fournisseur_data = data[data['Type_de_produit'].str.contains(type_produit, case=False, na=False)]
-            print("fournisseur data : ", fournisseur_data)
+            # print("fournisseur data : ", fournisseur_data)
             if fournisseur_data.empty:
                 continue
             
