@@ -194,17 +194,21 @@ def run_workflow():
     if full_data is not None:
         print(f"Données récupérées avec {len(full_data['data'])} éléments.")
         update_database_status(reference_produits)
+        print("Fin de la mise à jour.")
     else:
         print("Impossible de récupérer les données complètes. Vérifiez les logs.")
 
     print("***********************************")
-    print("Mise à jour de la table mpx_stats ")
+    print("Mise à jour de la table mpx_stats.")
     time.sleep(10)
     update_mpx_stats()
     print("***********************************")
-    print("Mise à jour de la table mpx_report")
+    print("Mise à jour de la table mpx_report.")
     time.sleep(10)
     update_mpx_report()
+
+
+    print("Fin du traitement.")
 
 if __name__ == "__main__":
     run_workflow()
