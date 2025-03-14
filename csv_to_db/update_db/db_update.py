@@ -204,6 +204,7 @@ def run_workflow():
     print("***********************************")
     print("Mise à jour de la table mpx_report")
     time.sleep(10)
+    update_mpx_report()
 
 if __name__ == "__main__":
     run_workflow()
