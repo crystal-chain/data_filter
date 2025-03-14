@@ -149,7 +149,7 @@ def update_mpx_report():
         nom_fournisseur,
         COUNT(ref_produit) AS nombre_total_produits,
         SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) AS nombre_produits_absent,
-        SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) AS nombre_produits_prime,
+        SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) AS nombre_produits_prime
     FROM fournisseur_produit
     GROUP BY nom_fournisseur;
     """)
