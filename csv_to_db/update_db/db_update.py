@@ -141,26 +141,36 @@ def update_mpx_stats():
 
 def update_mpx_report():
     engine = get_engine()
-    truncate_query = text("TRUNCATE TABLE mpx_report;")
-    
-    insert_query = text("""
-    INSERT INTO mpx_report
-    SELECT 
+    upsert_query = text("""
+    WITH new_data AS (
+      SELECT
         nom_fournisseur,
         COUNT(ref_produit) AS nombre_total_produits,
         SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) AS nombre_produits_absent,
         SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) AS nombre_produits_prime
-    FROM fournisseur_produit
-    GROUP BY nom_fournisseur;
+      FROM fournisseur_produit
+      GROUP BY nom_fournisseur
+    )
+    INSERT INTO mpx_report (nom_fournisseur, nombre_total_produits, nombre_produits_absent, nombre_produits_prime)
+    SELECT nd.nom_fournisseur,
+           nd.nombre_total_produits,
+           nd.nombre_produits_absent,
+           nd.nombre_produits_prime
+    FROM new_data nd
+    ON CONFLICT (nom_fournisseur)
+    DO UPDATE SET
+      nombre_total_produits = EXCLUDED.nombre_total_produits,
+      nombre_produits_absent = EXCLUDED.nombre_produits_absent,
+      nombre_produits_prime = EXCLUDED.nombre_produits_prime;
     """)
-    
+
     try:
         with engine.begin() as conn:
-            conn.execute(truncate_query)
-            conn.execute(insert_query)
-        print("La table mpx_report a été mise à jour avec succès.")
+            conn.execute(upsert_query)
+        print("La table mpx_report a été mise à jour avec succès (sans écraser id et nombre_produit_sollicite).")
     except Exception as e:
         print("Erreur lors de la mise à jour de la table mpx_report :", e)
+
 
 
 
