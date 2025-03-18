@@ -116,23 +116,33 @@ def update_mpx_stats():
     """
     engine = get_engine()
 
-    truncate_query = text("TRUNCATE TABLE mpx_stats;")
     
     insert_query = text("""
-        INSERT INTO mpx_stats
-        SELECT
-            COUNT(*) AS total_products,
-            COUNT(DISTINCT nom_fournisseur) AS total_unique_fournisseurs,
-            SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) AS total_present,
-            SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) AS total_absent,
-            ROUND(100.0 * SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) / COUNT(*), 2)::text || '%' AS pourcentage_prime,
-            ROUND(100.0 * SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) / COUNT(*), 2)::text || '%' AS pourcentage_absent
-        FROM fournisseur_produit;
+        INSERT INTO mpx_stats (
+    total_products,
+    total_unique_fournisseurs,
+    total_present,
+    total_absent,
+    pourcentage_prime,
+    pourcentage_absent,
+    nombre_total_sollicite,
+    date_mise_a_jour
+)
+SELECT
+    COUNT(*) AS total_products,
+    COUNT(DISTINCT nom_fournisseur) AS total_unique_fournisseurs,
+    SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) AS total_present,
+    SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) AS total_absent,
+    ROUND(100.0 * SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) / COUNT(*), 2)::text || '%' AS pourcentage_prime,
+    ROUND(100.0 * SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) / COUNT(*), 2)::text || '%' AS pourcentage_absent,
+    (SELECT COALESCE(SUM(nombre_produit_sollicite::integer), 0) FROM mpx_report) AS nombre_total_sollicite,
+    CURRENT_DATE AS date_mise_a_jour
+FROM fournisseur_produit;
+
     """)
     
     try:
         with engine.begin() as conn:
-            conn.execute(truncate_query)
             conn.execute(insert_query)
         print("La table mpx_stats a été mise à jour avec succès.")
     except Exception as e:
@@ -207,15 +217,15 @@ def run_workflow():
         print("Fin de la mise à jour.")
     else:
         print("Impossible de récupérer les données complètes. Vérifiez les logs.")
-
-    print("***********************************")
-    print("Mise à jour de la table mpx_stats.")
-    time.sleep(10)
-    update_mpx_stats()
     print("***********************************")
     print("Mise à jour de la table mpx_report.")
     time.sleep(10)
     update_mpx_report()
+    print("***********************************")
+    print("Mise à jour de la table mpx_stats.")
+    time.sleep(10)
+    update_mpx_stats()
+    
 
 
     print("Fin du traitement.")
