@@ -152,37 +152,39 @@ FROM fournisseur_produit;
 def update_mpx_report():
     engine = get_engine()
     upsert_query = text("""
-    WITH new_data AS (
-    SELECT
-        nom_fournisseur,
-        COUNT(ref_produit) AS nombre_total_produits,
-        SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) AS nombre_produits_absent,
-        SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) AS nombre_produits_prime
-    FROM fournisseur_produit
-    GROUP BY nom_fournisseur
-    )
-    INSERT INTO mpx_report (
-    id,
-    nom_fournisseur,
-    nombre_total_produits,
-    nombre_produits_absent,
-    nombre_produits_prime,
-    nombre_produit_a_sollicite
-    )
-    SELECT
-    nextval('mpx_report_seq') AS id,
-    nd.nom_fournisseur,
-    nd.nombre_total_produits,
-    nd.nombre_produits_absent,
-    nd.nombre_produits_prime,
-    nd.nombre_total_produits  -- Pour une nouvelle insertion, on suppose que nombre_produit_sollicite est 0
-    FROM new_data nd
-    ON CONFLICT (nom_fournisseur)
-    DO UPDATE SET
-    nombre_total_produits      = EXCLUDED.nombre_total_produits,
-    nombre_produits_absent     = EXCLUDED.nombre_produits_absent,
-    nombre_produits_prime      = EXCLUDED.nombre_produits_prime,
-    nombre_produit_a_sollicite = EXCLUDED.nombre_total_produits - mpx_report.nombre_produit_sollicite::bigint;
+        WITH new_data AS (
+        SELECT
+            nom_fournisseur,
+            COUNT(ref_produit) AS nombre_total_produits,
+            SUM(CASE WHEN status = 'ABSENT' THEN 1 ELSE 0 END) AS nombre_produits_absent,
+            SUM(CASE WHEN status = 'PRESENT' THEN 1 ELSE 0 END) AS nombre_produits_prime
+        FROM fournisseur_produit
+        WHERE nom_fournisseur IS NOT NULL  
+        GROUP BY nom_fournisseur
+        )
+        INSERT INTO mpx_report (
+            id,
+            nom_fournisseur,
+            nombre_total_produits,
+            nombre_produits_absent,
+            nombre_produits_prime,
+            nombre_produit_a_sollicite
+        )
+        SELECT
+            nextval('mpx_report_seq') AS id,
+            nd.nom_fournisseur,
+            nd.nombre_total_produits,
+            nd.nombre_produits_absent,
+            nd.nombre_produits_prime,
+            nd.nombre_total_produits  
+        FROM new_data nd
+        ON CONFLICT (nom_fournisseur)
+        DO UPDATE SET
+            nombre_total_produits      = EXCLUDED.nombre_total_produits,
+            nombre_produits_absent     = EXCLUDED.nombre_produits_absent,
+            nombre_produits_prime      = EXCLUDED.nombre_produits_prime,
+            nombre_produit_a_sollicite = EXCLUDED.nombre_total_produits - mpx_report.nombre_produit_sollicite::bigint;
+
     """)
 
     try:
