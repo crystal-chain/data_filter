@@ -1,6 +1,8 @@
 import os
-from sqlalchemy import  text
+
 from dotenv import load_dotenv
+from sqlalchemy import text
+
 load_dotenv()
 
 
@@ -16,23 +18,28 @@ def insert_into_table(engine, table_name, data):
         return
 
     columns = data[0].keys()
-    col_list = ", ".join([f'"{col}"' for col in columns])  # Ajout des guillemets autour des colonnes
+    col_list = ", ".join(
+        [f'"{col}"' for col in columns]
+    )  # Ajout des guillemets autour des colonnes
     placeholders = ", ".join([f":{col}" for col in columns])
-    update_clause = ", ".join([f'"{col}" = EXCLUDED."{col}"' for col in columns])
-    
-    query = text(f'''
+    update_clause = ", ".jfile_typeoin(
+        [f'"{col}" = EXCLUDED."{col}"' for col in columns]
+    )
+
+    query = text(
+        f"""
         INSERT INTO {table_name} ({col_list})
         VALUES ({placeholders})
         ON CONFLICT ("ref_produit")
         DO UPDATE SET {update_clause};
-    ''')
-    
+    """
+    )
+
     with engine.begin() as conn:
         for row in data:
             conn.execute(query, row)
-    
-    print(f"{len(data)} enregistrements insérés dans {table_name}.")
 
+    print(f"{len(data)} enregistrements insérés dans {table_name}.")
 
 
 def insert_dataframe_with_conflict(engine, table_name, df):
@@ -51,6 +58,7 @@ def insert_dataframe_with_conflict(engine, table_name, df):
             """
             conn.execute(text(insert_query), row.to_dict())
 
+
 def merge_staging_to_final(engine):
     """
     Fusionne les nouvelles données des tables de staging (staging_fournisseur et staging_produit)
@@ -58,7 +66,8 @@ def merge_staging_to_final(engine):
     En cas de conflit sur ref_produits, pour chaque colonne, si la nouvelle valeur est NULL,
     on conserve la valeur déjà présente dans fournisseur_produit.
     """
-    merge_query = text("""
+    merge_query = text(
+        """
     WITH new_data AS (
       SELECT 
         COALESCE(f.ref_produit, p.ref_produit) AS ref_produits,
@@ -81,6 +90,7 @@ def merge_staging_to_final(engine):
         f."localisation",
         f."type_fournisseur",
         f."source_file" AS "source_file_fournisseur",
+        f."usine",
         p."column",
         p."row_number",
         p."entreprise",
@@ -111,6 +121,7 @@ def merge_staging_to_final(engine):
         p."Informations_supplémentaires_fournisseur",
         p."Commentaires",
         p."Réference_modele_pour_fournisseur",
+        p."rep_saisie",
         p."EAN_UVC",
         p."Inactif",
         p."code_traitement",
@@ -139,6 +150,8 @@ def merge_staging_to_final(engine):
       "nom_fournisseur",
       "localisation",
       "type_fournisseur",
+      "usine",
+      "rep_saisie",
       "source_file_fournisseur",
       "column",
       "row_number",
@@ -229,7 +242,9 @@ def merge_staging_to_final(engine):
       "EAN_UVC",
       "Inactif",
       "code_traitement",
-      "source_file"
+      "source_file",
+      "usine",
+      "rep_saisie"
     FROM new_data
     ON CONFLICT (ref_produits) DO UPDATE SET
       "Nom_et_role_contact_1" = COALESCE(EXCLUDED."Nom_et_role_contact_1", fournisseur_produit."Nom_et_role_contact_1"),
@@ -257,6 +272,8 @@ def merge_staging_to_final(engine):
       "node_name" = COALESCE(EXCLUDED."node_name", fournisseur_produit."node_name"),
       "nom_du_produit" = COALESCE(EXCLUDED."nom_du_produit", fournisseur_produit."nom_du_produit"),
       "ref_produit" = COALESCE(EXCLUDED."ref_produit", fournisseur_produit."ref_produit"),
+      "usine" = COALESCE(EXCLUDED."usine", fournisseur_produit."usine"),
+      "rep_saisie" = COALESCE(EXCLUDED."rep_saisie", fournisseur_produit."rep_saisie"),
       "URL_photo" = COALESCE(EXCLUDED."URL_photo", fournisseur_produit."URL_photo"),
       "recyclabilite" = COALESCE(EXCLUDED."recyclabilite", fournisseur_produit."recyclabilite"),
       "incorporation_matiere_recyclee" = COALESCE(EXCLUDED."incorporation_matiere_recyclee", fournisseur_produit."incorporation_matiere_recyclee"),
@@ -284,7 +301,8 @@ def merge_staging_to_final(engine):
       "Inactif" = COALESCE(EXCLUDED."Inactif", fournisseur_produit."Inactif"),
       "code_traitement" = COALESCE(EXCLUDED."code_traitement", fournisseur_produit."code_traitement"),
       "source_file" = COALESCE(EXCLUDED."source_file", fournisseur_produit."source_file")
-    """)
+    """
+    )
     with engine.begin() as conn:
         conn.execute(merge_query)
     print("Mise à jour de la table fournisseur_produit effectuée avec succès.")
