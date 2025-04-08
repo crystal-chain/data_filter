@@ -22,9 +22,7 @@ def insert_into_table(engine, table_name, data):
         [f'"{col}"' for col in columns]
     )  # Ajout des guillemets autour des colonnes
     placeholders = ", ".join([f":{col}" for col in columns])
-    update_clause = ", ".jfile_typeoin(
-        [f'"{col}" = EXCLUDED."{col}"' for col in columns]
-    )
+    update_clause = ", ".join([f'"{col}" = EXCLUDED."{col}"' for col in columns])
 
     query = text(
         f"""

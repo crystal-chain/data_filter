@@ -25,7 +25,7 @@ def process_csv_file(file_stream, table_name, file_name):
                 file_stream, 
                 encoding="cp1252", 
                 separator=";", 
-                dtypes={"code_traitement": pl.Utf8 ,"EAN_UVC":pl.Utf8 ,"ref_produit":pl.Utf8,"Informations supplémentaires (fournisseur)":pl.Utf8},
+                dtypes={"code_traitement": pl.Utf8 ,"ean_uvc":pl.Utf8 ,"ref_produit":pl.Utf8,"Informations supplémentaires (fournisseur)":pl.Utf8},
                 columns=list(range(33))
             )
         else:
