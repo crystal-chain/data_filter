@@ -16,7 +16,7 @@ def connect_to_sftp():
     private_key_path = os.getenv("SFTP_PRIVATE_KEY_PATH")
     remote_path = os.getenv("SFTP_REMOTE_PATH")
 
-    private_key = paramiko.RSAKey.from_private_key_file(private_key_path)
+    private_key = paramiko.Ed25519Key.from_private_key_file(private_key_path)
     transport = paramiko.Transport((server, 22))
     transport.connect(username=username, pkey=private_key)
     sftp = paramiko.SFTPClient.from_transport(transport)
