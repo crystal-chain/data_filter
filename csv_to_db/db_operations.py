@@ -88,8 +88,6 @@ def merge_staging_to_final(engine):
         f."localisation",
         f."type_fournisseur",
         f."source_file" AS "source_file_fournisseur",
-        f."usine",
-        p."column",
         p."row_number",
         p."entreprise",
         p."node_name",
@@ -123,7 +121,9 @@ def merge_staging_to_final(engine):
         p."ean_uvc",
         p."Inactif",
         p."code_traitement",
-        p."source_file"
+        p."source_file",
+        f."usine",
+        p."column"
       FROM staging_fournisseur f
       FULL OUTER JOIN staging_produit p
           ON f.ref_produit = p.ref_produit
@@ -148,8 +148,7 @@ def merge_staging_to_final(engine):
       "nom_fournisseur",
       "localisation",
       "type_fournisseur",
-      "usine",
-      "rep_saisie",
+      
       "source_file_fournisseur",
       "column",
       "row_number",
@@ -184,7 +183,9 @@ def merge_staging_to_final(engine):
       "ean_uvc",
       "Inactif",
       "code_traitement",
-      "source_file"
+      "source_file",
+      "usine",
+      "rep_saisie"
     )
     SELECT 
       ref_produits,
