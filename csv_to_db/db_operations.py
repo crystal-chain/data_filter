@@ -122,7 +122,7 @@ def merge_staging_to_final(engine):
         p."Commentaires",
         p."Réference_modele_pour_fournisseur",
         p."rep_saisie",
-        p."EAN_UVC",
+        p."ean_uvc",
         p."Inactif",
         p."code_traitement",
         p."source_file"
@@ -183,7 +183,7 @@ def merge_staging_to_final(engine):
       "Informations_supplémentaires_fournisseur",
       "Commentaires",
       "Réference_modele_pour_fournisseur",
-      "EAN_UVC",
+      "ean_uvc",
       "Inactif",
       "code_traitement",
       "source_file"
@@ -239,7 +239,7 @@ def merge_staging_to_final(engine):
       "Informations_supplémentaires_fournisseur",
       "Commentaires",
       "Réference_modele_pour_fournisseur",
-      "EAN_UVC",
+      "ean_uvc",
       "Inactif",
       "code_traitement",
       "source_file",
@@ -297,7 +297,7 @@ def merge_staging_to_final(engine):
       "Informations_supplémentaires_fournisseur" = COALESCE(EXCLUDED."Informations_supplémentaires_fournisseur", fournisseur_produit."Informations_supplémentaires_fournisseur"),
       "Commentaires" = COALESCE(EXCLUDED."Commentaires", fournisseur_produit."Commentaires"),
       "Réference_modele_pour_fournisseur" = COALESCE(EXCLUDED."Réference_modele_pour_fournisseur", fournisseur_produit."Réference_modele_pour_fournisseur"),
-      "EAN_UVC" = COALESCE(EXCLUDED."EAN_UVC", fournisseur_produit."EAN_UVC"),
+      "ean_uvc" = COALESCE(EXCLUDED."ean_uvc", fournisseur_produit."ean_uvc"),
       "Inactif" = COALESCE(EXCLUDED."Inactif", fournisseur_produit."Inactif"),
       "code_traitement" = COALESCE(EXCLUDED."code_traitement", fournisseur_produit."code_traitement"),
       "source_file" = COALESCE(EXCLUDED."source_file", fournisseur_produit."source_file")
