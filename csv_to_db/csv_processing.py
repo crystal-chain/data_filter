@@ -23,7 +23,7 @@ def process_csv_file(file_stream, table_name, file_name):
             # Lecture du fichier produit (exemple : encodage cp1252 et séparateur point-virgule)
             df = pl.read_csv(
                 file_stream, 
-                encoding="utf8",
+                encoding="cp1252",
                 separator=";", 
                 dtypes={"code_traitement": pl.Utf8 ,"ean_uvc":pl.Utf8 ,"ref_produit":pl.Utf8,"Informations supplémentaires (fournisseur)":pl.Utf8},
                 columns=list(range(33))

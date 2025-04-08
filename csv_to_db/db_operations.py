@@ -148,7 +148,6 @@ def merge_staging_to_final(engine):
       "nom_fournisseur",
       "localisation",
       "type_fournisseur",
-      
       "source_file_fournisseur",
       "column",
       "row_number",
