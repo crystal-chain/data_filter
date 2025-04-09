@@ -47,7 +47,7 @@ def generate_templates_task(self):
         'Description': 'Description',
         'Informations_supplémentaires_fournisseur': 'InformationsSupplementaires',
         'Commentaires': 'Commentaires',
-        "EAN_UVC": "EAN"
+        "ean_uvc": "EAN"
     }
     
     # Appliquer les filtres
