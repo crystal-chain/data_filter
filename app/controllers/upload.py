@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, send_file
 from ..model.logic import *
 import pandas as pd 
+from app.model.logic import *
 from io import BytesIO
 import os
 import zipfile
